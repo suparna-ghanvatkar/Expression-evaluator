@@ -1,180 +1,112 @@
-#include<stdio.h>
-#include<string.h>
-#include<ctype.h>
-int parse(char *expr,int X,int *res)
-{
-	int i=0,j,oppos,flagneg=0;
-	int no1,no2,no;
-	char op;
-	if(isalpha(expr[i])){
-		no1=X;
-	}
-	else{
-		if(expr[i]=='-')
-		{
-			i++;
-			flagneg=1;
-		}
-		no1=(expr[i]-48);
-		while(isdigit(expr[i+1]))
-		{
-			i++;
-			no1=(no1*10)+(expr[i]-48);
-		}
-		if(flagneg)
-			no1=(-no1);
-	}
-	i++;
-	while(i<strlen(expr))
-	{
-		oppos=i;
-		char op=expr[oppos];
-		i++;
-		if(expr[i-1]==expr[i] && expr[i]=='-')
-		{
-			op='+';
-			i++;
-		}
-		printf("%c,%c\n",expr[i-1],expr[i]);
-		no2=0;
-		if(isalpha(expr[i]))
-			no2=X;
-		else if(isdigit(expr[i]) && i<strlen(expr)){
-			no2=(expr[i]-48);
-			while(isdigit(expr[i+1]))
-			{
-				i++;
-				no2=(no2*10)+(expr[i]-48);
-			}
-		}
-		switch(op){
-			case '+': no1=no1+no2;
-						break;
-			case '-': no1=no1-no2;
-						break;
-			case '*': no1=no1*no2;
-						break;
-			case '/': no1=no1/no2;
-						break;
-			case '^': no=no1;
-						for(j=2;j<=no2;j++){
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <stdlib.h>
+
+int operation(char op,int no1,int no2){
+    int no=no1,j;
+    switch(op){
+        case '+': return no1+no2;
+        case '-': return no1-no2;
+        case '*': return no1*no2;
+        case '/': return no1/no2;
+        case '^': for(j=2;j<=no2;j++){
 							no1*=no;
 						}
-						break;
-		}
-		printf("%dno1:\n",no1);
-	}
-	*res=no1;
-	return 0;
-}
-int bracketparse(char *expr,int X,int *res)
-{
-	int i=0,j=0,temp,k;
-	while(expr[i]!='('&& expr[i]!='\0'){i++;}
-	if(expr[i]=='\0'){
-		parse(expr,X,res);
-		return 2;
-	}	//to signify 
-	while(expr[i]=='('){i++;}
-	char exp[100];
-	k=i;//save start of bracket
-	while(expr[i]!=')'){
-		exp[j]=expr[i];
-		//printf("%c",exp[j]);
-		j++;i++;	
-	}
-	exp[j]='\0';
-	parse(exp,X,&temp);
-	//find digit length and convert to string
-	printf("%dtenmp\n",temp);
-	int len=1,divisor=10;
-	while(temp/divisor!=0){
-		len++;
-		divisor*=10;	
-	}
-	char tempno[10];
-	int q=0,temppos;
-	if(temp<0)
-		temppos=-1*temp;
-	else
-		temppos=temp;
-	divisor/=10;
-	for(q=0;q<len;q++){
-		tempno[q]=(temppos/divisor)+48;
-		temppos=temppos%divisor;
-		divisor/=10;
-	}
-	tempno[q]='\0';
-	printf("%s\n",tempno);
-	for(j=0;j<k-1;j++){
-		exp[j]=expr[j];
-	}
-    if(temp<0){
-		len++;
-        exp[k-1]='-';
-        for(q=k;q<(k+len-1);q++)
-            exp[q]=tempno[q-k];
+                    return no1;
     }
-	else{
-		for(q=k-1;q<(k+len-1);q++){	
-			exp[q]=tempno[q-k+1];
-		}
-	}
-	for(j=(k+len-1);expr[j]!='\0';j++){
-		exp[j]=expr[++i];
-	}
-	printf("%s\n",exp);
-	bracketparse(exp,X,res);
-	return 0;
+    return -1;
 }
-int fullparse(char *expr,int X,int *res)
-{
-	char exp[100];
-	int i=0,j=0,k,q=0;
-	while(expr[q]!='\0'){
-		while(expr[i]!='^'){i++;}
-		if(expr[i-1]==')'&& expr[i]!='\0'){
-			while(expr[i]!='('){i--;}
-			j=i;
-			for(k=0;k<j;k++){
-				exp[k]=expr[k];//
-			}
-			exp[k]='(';
-			k++;
-			for(i=j;expr[i]!='^';i++){
-				exp[k]=expr[i];
-				k++;
-			}
-			exp[k]='^';
-			i++;k++;
-			while(isalpha(expr[i])||isdigit(expr[i])){
-				exp[k]=expr[i];		
-				i++;k++;
-			}
-			exp[k]=')';k++;
-			for(j=i;expr[j]!='\0';j++)
-			{
-				exp[k]=expr[j];
-				k++;
-			}
-			expr[k]='\0';
-		}
-		q=i;
+
+int eval(char *expr,int X){
+    int operands[strlen(expr)];
+    char operators[strlen(expr)];
+    int tos1=-1,tos2=-1;//1 is operands 2 is operators
+    int i=0,q;
+    int temp,no1,no2;
+    while(expr[i]!='\0'){
+        if(isalpha(expr[i])){
+            operands[tos1+1]=X;
+            tos1++;i++;
+        }
+        else if(isdigit(expr[i])){
+            operands[tos1+1]=expr[i]-'0';
+            tos1++;
+            while(isdigit(expr[i+1])){
+                operands[tos1]=(operands[tos1]*10)+(expr[++i]-'0');
+            }
+            i++;
+        }
+        else if(tos2==-1)
+            operators[++tos2]=expr[i++];
+        else if(expr[i]==')'){
+            while(operators[tos2]!='('){
+                temp=operation(operators[tos2--],operands[tos1-1],operands[tos1]);
+                operands[tos1-1]=temp;
+                tos1--;
+            }
+            tos2--;//to delete the (
+			i++;
+        }
+        else if(expr[i]=='^'){
+            if(operators[tos2]=='^'){
+                temp=operation(operators[tos2],operands[tos1-1],operands[tos1]);
+                operands[tos1-1]=temp;
+                operators[tos2]=expr[i];
+                tos1--;i++;
+            }
+            else
+                operators[++tos2]=expr[i++];
+        }
+        else if(expr[i]=='('){
+            operators[++tos2]=expr[i++];
+        }
+        else if(expr[i]=='*'||expr[i]=='/'){
+            if(operators[tos2]=='^'||operators[tos2]=='*'||operators[tos2]=='/'){
+                temp=operation(operators[tos2],operands[tos1-1],operands[tos1]);
+                operands[tos1-1]=temp;
+                operators[tos2]=expr[i];
+                tos1--;i++;
+            }
+            else
+                operators[++tos2]=expr[i++];
+        }
+        else if(expr[i]=='+'||expr[i]=='-'){
+            if(operators[tos2]!='('){
+                temp=operation(operators[tos2],operands[tos1-1],operands[tos1]);
+                operands[tos1-1]=temp;
+                operators[tos2]=expr[i];
+                tos1--;i++;
+            }
+            else
+                operators[++tos2]=expr[i++];
+        }
+	/*for(q=0;q<=tos1;q++)
+		printf("operands%d\t",operands[q]);
+	for(q=0;q<=tos2;q++)
+		printf("operators%c\t",operators[q]);
+	printf("%c\n",expr[i]);*/
+    }
+    while(tos1>0 && tos2>-1){
+		temp=operation(operators[tos2--],operands[tos1-1],operands[tos1]);
+        operands[tos1-1]=temp;
+        tos1--;
 	}
+	return operands[tos1];
 }
-int main()
-{	
-	char str[100];
+
+int main() {
+
+    char expr[100];
 	int result;
-	int status;
 	int no=0;
-	scanf("%s",str);	
+	scanf("%s",expr);	
 	while(no!=1000){
 		scanf("%d",&no);
 		if(no!=1000){
-			status=bracketparse(str,no,&result);
+			result=eval(expr,no);
 			printf("%d\n",result);
 		}
-	}
-	return 0;
+	}   
+    return 0;
 }
